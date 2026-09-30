@@ -87,7 +87,7 @@
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/ikarisz/PickleChart.git
+git clone https://github.com/songkunka/PickleChart.git
 
 # 2. Navigate to project directory
 cd PickleChart
