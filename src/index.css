@@ -4,49 +4,56 @@
 
 :root {
   color-scheme: dark;
+  --tv-bg-base: #131722;
+  --tv-bg-surface: #1e222d;
+  --tv-bg-hover: #2a2e39;
+  --tv-border: #2a2e39;
+  --tv-text-primary: #d1d4dc;
+  --tv-text-secondary: #787b86;
+  --tv-blue: #2962ff;
+  --tv-green: #089981;
+  --tv-red: #f23645;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: #080a0f;
-  color: #f1f5f9;
-  font-family: 'Tahoma', 'Segoe UI', Arial, sans-serif;
+  background-color: var(--tv-bg-base);
+  color: var(--tv-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
+  user-select: none;
 }
 
-/* Classic Windows XP Win32 Scrollbars */
+/* TradingView Dark Sleek Scrollbars */
 ::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #ece9d8;
-  border-left: 1px solid #aca899;
-  box-shadow: inset 1px 0 0 #ffffff;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ece9d8;
-  border-top: 1px solid #ffffff;
-  border-left: 1px solid #ffffff;
-  border-right: 1px solid #707070;
-  border-bottom: 1px solid #707070;
-  border-radius: 0;
-  box-shadow: inset -1px -1px 0 #aca899;
+  background: #2a2e39;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #dfdbcc;
+  background: #363a45;
 }
 
-::-webkit-scrollbar-thumb:active {
-  background: #c8c4b4;
-  border-top: 1px solid #707070;
-  border-left: 1px solid #707070;
-  border-right: 1px solid #ffffff;
-  border-bottom: 1px solid #ffffff;
+/* Tabular numerals for price ladders, tickers, clocks */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus outline discipline */
+button:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--tv-blue);
+  outline-offset: -1px;
 }

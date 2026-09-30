@@ -123,6 +123,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
   // Selected drawing & active draft state
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
+  const draftStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const [activeDraft, setActiveDraft] = useState<{
     type: 'box' | 'trendline' | 'fibonacci' | 'fixed_range_vp';
     time1: number;
@@ -488,7 +489,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
           ctx.fillStyle = 'rgba(15, 20, 30, 0.45)';
           ctx.fillRect(0, 0, width, height);
         } else {
-          ctx.fillStyle = settings.solidColor || '#11151c';
+          ctx.fillStyle = settings.solidColor || '#131722';
           ctx.fillRect(0, 0, width, height);
         }
 
@@ -518,7 +519,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
 
       // 2. GRID LINES & TICK MARKS
-      ctx.strokeStyle = '#1b2230';
+      ctx.strokeStyle = settings.gridColor || '#1e222d';
       ctx.lineWidth = 1;
 
       // Horizontal price grid lines
@@ -541,25 +542,25 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         const maxQty = Math.max(orderBook.maxBidQty, orderBook.maxAskQty, 12.0);
         const maxBarW = RIGHT_MARGIN - 4;
 
-        // Bids (Green bars)
+        // Bids (Pine green bars)
         for (const b of orderBook.bids) {
           if (b.price < viewport.minPrice || b.price > viewport.maxPrice) continue;
           const y = priceToY(b.price);
           const barW = Math.min(maxBarW, (b.qty / maxQty) * maxBarW);
-          ctx.fillStyle = 'rgba(34, 197, 94, 0.25)';
+          ctx.fillStyle = 'rgba(8, 153, 129, 0.25)';
           ctx.fillRect(chartW + 2, y - 2, barW, 4);
-          ctx.fillStyle = '#22c55e';
+          ctx.fillStyle = '#089981';
           ctx.fillRect(chartW + 2 + barW - 2, y - 2, 2, 4);
         }
 
-        // Asks (Red bars)
+        // Asks (Crimson red bars)
         for (const a of orderBook.asks) {
           if (a.price < viewport.minPrice || a.price > viewport.maxPrice) continue;
           const y = priceToY(a.price);
           const barW = Math.min(maxBarW, (a.qty / maxQty) * maxBarW);
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+          ctx.fillStyle = 'rgba(242, 54, 69, 0.25)';
           ctx.fillRect(chartW + 2, y - 2, barW, 4);
-          ctx.fillStyle = '#ef4444';
+          ctx.fillStyle = '#f23645';
           ctx.fillRect(chartW + 2 + barW - 2, y - 2, 2, 4);
         }
       }
@@ -574,9 +575,9 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         ctx.stroke();
 
         // Price label on right margin with dark text background for contrast
-        ctx.fillStyle = '#11151c';
+        ctx.fillStyle = '#131722';
         ctx.fillRect(chartW + 3, y - 6, 48, 12);
-        ctx.fillStyle = '#94a3b8';
+        ctx.fillStyle = '#787b86';
         ctx.fillText(p.toFixed(2), chartW + 5, y);
       }
 
@@ -600,7 +601,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         if (x < 0 || x > chartW) continue;
 
         ctx.setLineDash([2, 4]);
-        ctx.strokeStyle = '#222c3d';
+        ctx.strokeStyle = settings.gridColor || '#1e222d';
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, chartH);
@@ -612,7 +613,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         const timeStr = timeStepSec < 60
           ? `${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
           : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = '#787b86';
         ctx.fillText(timeStr, x, chartH + 8);
       }
 
@@ -620,8 +621,8 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
       const trajectory = priceHistoryRef.current;
       const latestCandleTime = candles.length > 0 ? candles[candles.length - 1].time + tfSec : viewport.maxTime;
       if (trajectory.length > 1) {
-        // Draw Best Bid Step Line (Green)
-        ctx.strokeStyle = 'rgba(34, 197, 94, 0.65)';
+        // Draw Best Bid Step Line (Pine green)
+        ctx.strokeStyle = 'rgba(8, 153, 129, 0.65)';
         ctx.lineWidth = 1.0;
         ctx.beginPath();
         let started = false;
@@ -643,8 +644,8 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         }
         ctx.stroke();
 
-        // Draw Best Ask Step Line (Red)
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+        // Draw Best Ask Step Line (Crimson red)
+        ctx.strokeStyle = 'rgba(242, 54, 69, 0.65)';
         ctx.lineWidth = 1.0;
         ctx.beginPath();
         started = false;
@@ -713,8 +714,8 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
               ctx.fillStyle = color;
               ctx.fillRect(x, yTop, w, h);
             };
-            seg(r.buy, `rgba(34, 197, 94, ${a})`);
-            seg(r.sell, `rgba(239, 68, 68, ${a})`);
+            seg(r.buy, `rgba(8, 153, 129, ${a})`);
+            seg(r.sell, `rgba(242, 54, 69, ${a})`);
             // Candle-estimated volume: same hues, lighter and desaturated
             seg(r.estBuy, `rgba(110, 190, 140, ${a * 0.7})`);
             seg(r.estSell, `rgba(200, 120, 120, ${a * 0.7})`);
@@ -815,7 +816,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
         // Outline
         if (settings.showBorders) {
-          ctx.strokeStyle = isUp ? '#15803d' : '#991b1b';
+          ctx.strokeStyle = bodyColor;
           ctx.lineWidth = 0.8;
           ctx.strokeRect(bodyX, Math.round(topY), bodyW, Math.round(bodyH));
         }
@@ -917,12 +918,14 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
             // Selection handles
             if (isSelected) {
               ctx.fillStyle = '#ffffff';
-              ctx.strokeStyle = '#0055ea';
+              ctx.strokeStyle = '#2962ff';
               ctx.lineWidth = 1.5;
-              const hs = 6;
+              const r = 3.5;
               [ [rx, ry], [rx + rw, ry], [rx, ry + rh], [rx + rw, ry + rh] ].forEach(([hx, hy]) => {
-                ctx.fillRect(hx - hs/2, hy - hs/2, hs, hs);
-                ctx.strokeRect(hx - hs/2, hy - hs/2, hs, hs);
+                ctx.beginPath();
+                ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
               });
             }
           } else if (d.type === 'trendline' && d.price2 !== undefined && d.time2 !== undefined) {
@@ -942,12 +945,14 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
             if (isSelected) {
               ctx.fillStyle = '#ffffff';
-              ctx.strokeStyle = '#0055ea';
+              ctx.strokeStyle = '#2962ff';
               ctx.lineWidth = 1.5;
-              const hs = 6;
+              const r = 3.5;
               [ [x1, y1], [x2, y2] ].forEach(([hx, hy]) => {
-                ctx.fillRect(hx - hs/2, hy - hs/2, hs, hs);
-                ctx.strokeRect(hx - hs/2, hy - hs/2, hs, hs);
+                ctx.beginPath();
+                ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
               });
             }
           } else if (d.type === 'horizontal_ray') {
@@ -1127,12 +1132,14 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
             if (isSelected) {
               ctx.fillStyle = '#ffffff';
-              ctx.strokeStyle = '#0055ea';
+              ctx.strokeStyle = '#2962ff';
               ctx.lineWidth = 1.5;
-              const hs = 6;
+              const r = 3.5;
               [[xa, pocY], [xb, pocY]].forEach(([hx, hy]) => {
-                ctx.fillRect(hx - hs / 2, hy - hs / 2, hs, hs);
-                ctx.strokeRect(hx - hs / 2, hy - hs / 2, hs, hs);
+                ctx.beginPath();
+                ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
               });
             }
           } else if (d.type === 'text') {
@@ -1248,11 +1255,11 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
         // Top section (Green - Buy Taker)
         const splitY = y + radius * (1 - 2 * buyRatio);
-        ctx.fillStyle = '#22c55e'; // Vibrant green
+        ctx.fillStyle = '#089981'; // Pine green
         ctx.fillRect(x - radius, y - radius, radius * 2, splitY - (y - radius));
 
         // Bottom section (Red - Sell Taker)
-        ctx.fillStyle = '#ef4444'; // Vibrant red
+        ctx.fillStyle = '#f23645'; // Crimson red
         ctx.fillRect(x - radius, splitY, radius * 2, (y + radius) - splitY);
 
         // Horizontal dividing seam line
@@ -1311,9 +1318,9 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
         // Best Bid Tag (Green Box)
         if (bidY >= 0 && bidY <= chartH) {
-          ctx.fillStyle = '#15803d';
+          ctx.fillStyle = '#089981';
           ctx.fillRect(chartW + 2, bidY - 8, RIGHT_MARGIN - 4, 16);
-          ctx.strokeStyle = '#22c55e';
+          ctx.strokeStyle = '#089981';
           ctx.strokeRect(chartW + 2, bidY - 8, RIGHT_MARGIN - 4, 16);
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 10px "JetBrains Mono", monospace';
@@ -1322,9 +1329,9 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
         // Best Ask Tag (Red Box)
         if (askY >= 0 && askY <= chartH) {
-          ctx.fillStyle = '#991b1b';
+          ctx.fillStyle = '#f23645';
           ctx.fillRect(chartW + 2, askY - 8, RIGHT_MARGIN - 4, 16);
-          ctx.strokeStyle = '#ef4444';
+          ctx.strokeStyle = '#f23645';
           ctx.strokeRect(chartW + 2, askY - 8, RIGHT_MARGIN - 4, 16);
           ctx.fillStyle = '#ffffff';
           ctx.font = 'bold 10px "JetBrains Mono", monospace';
@@ -1774,6 +1781,37 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
     }
 
     // Active Drawing Tool handler
+    if (activeDraft && x <= chartW && y <= chartH) {
+      // Second click finishes the two-click drawing (TradingView standard)
+      const transforms = getTransforms(rect.width, rect.height, viewport);
+      if (transforms) {
+        const clickPrice = transforms.yToPrice(y);
+        const clickTime = transforms.xToTime(x);
+        const timeDiff = Math.abs(clickTime - activeDraft.time1);
+        const priceDiff = Math.abs(clickPrice - activeDraft.price1);
+        if (activeDraft.type === 'fixed_range_vp' ? timeDiff >= tfSec : (timeDiff > 0.001 || priceDiff > 0.001)) {
+          const newDrawing: DrawingItem = {
+            id: `d_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            type: activeDraft.type,
+            time1: activeDraft.time1,
+            price1: activeDraft.price1,
+            time2: clickTime,
+            price2: clickPrice,
+            color: activeDraft.color,
+            lineWidth: 1.5,
+            label: activeDraft.type === 'box' ? 'Order Block' : undefined,
+            createdAt: Date.now(),
+          };
+          onUpdateDrawings?.([...drawings, newDrawing]);
+          setSelectedDrawingId(newDrawing.id);
+        }
+        setActiveDraft(null);
+        draftStartPosRef.current = null;
+        onSelectDrawingTool?.('select');
+        return;
+      }
+    }
+
     if (activeDrawingTool && activeDrawingTool !== 'select' && x <= chartW && y <= chartH) {
       const transforms = getTransforms(rect.width, rect.height, viewport);
       if (transforms) {
@@ -1827,6 +1865,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
           activeDrawingTool === 'fibonacci' ||
           activeDrawingTool === 'fixed_range_vp'
         ) {
+          draftStartPosRef.current = { x, y };
           setActiveDraft({
             type: activeDrawingTool,
             time1: clickTime,
@@ -2077,29 +2116,37 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
     }
   };
 
-  const handleMouseUp = () => {
-    // Commit Active Drawing Draft
-    if (activeDraft) {
-      const timeDiff = Math.abs(activeDraft.time2 - activeDraft.time1);
-      const priceDiff = Math.abs(activeDraft.price2 - activeDraft.price1);
-      if (activeDraft.type === 'fixed_range_vp' ? timeDiff >= tfSec : timeDiff > 0.1 || priceDiff > 0.01) {
-        const newDrawing: DrawingItem = {
-          id: `d_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-          type: activeDraft.type,
-          time1: activeDraft.time1,
-          price1: activeDraft.price1,
-          time2: activeDraft.time2,
-          price2: activeDraft.price2,
-          color: activeDraft.color,
-          lineWidth: 1.5,
-          label: activeDraft.type === 'box' ? 'Order Block' : undefined,
-          createdAt: Date.now(),
-        };
-        onUpdateDrawings?.([...drawings, newDrawing]);
-        setSelectedDrawingId(newDrawing.id);
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Commit Active Drawing Draft if dragged (drag placement mode)
+    if (activeDraft && draftStartPosRef.current) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const curX = e.clientX - rect.left;
+      const curY = e.clientY - rect.top;
+      const dragDist = Math.hypot(curX - draftStartPosRef.current.x, curY - draftStartPosRef.current.y);
+      if (dragDist > 14) {
+        const timeDiff = Math.abs(activeDraft.time2 - activeDraft.time1);
+        const priceDiff = Math.abs(activeDraft.price2 - activeDraft.price1);
+        if (activeDraft.type === 'fixed_range_vp' ? timeDiff >= tfSec : (timeDiff > 0.001 || priceDiff > 0.001)) {
+          const newDrawing: DrawingItem = {
+            id: `d_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            type: activeDraft.type,
+            time1: activeDraft.time1,
+            price1: activeDraft.price1,
+            time2: activeDraft.time2,
+            price2: activeDraft.price2,
+            color: activeDraft.color,
+            lineWidth: 1.5,
+            label: activeDraft.type === 'box' ? 'Order Block' : undefined,
+            createdAt: Date.now(),
+          };
+          onUpdateDrawings?.([...drawings, newDrawing]);
+          setSelectedDrawingId(newDrawing.id);
+        }
+        setActiveDraft(null);
+        draftStartPosRef.current = null;
+        onSelectDrawingTool?.('select');
       }
-      setActiveDraft(null);
-      onSelectDrawingTool?.('select');
+      // If dragDist <= 14, user clicked point 1 without dragging; keep activeDraft alive for second click!
     }
 
     if (measureBox && measureBox.isDrawing) {
@@ -2117,10 +2164,6 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
   };
 
   const handleMouseLeave = () => {
-    if (activeDraft) {
-      setActiveDraft(null);
-      onSelectDrawingTool?.('select');
-    }
     setIsDragging(false);
     setDragState(null);
     setHoverPos(null);

@@ -85,18 +85,18 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
   ];
 
   return (
-    <aside className="w-11 bg-[#1e222d] border-r border-[#2a2e39] flex flex-col justify-between py-2 items-center select-none shrink-0 z-20">
+    <aside className="w-[42px] bg-[#1e222d] border-r border-[#2a2e39] flex flex-col justify-between py-1.5 items-center select-none shrink-0 z-20">
       {/* Top Section: Main Drawing Tools */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-0.5">
         {tools.map((t) => {
           const isActive = activeTool === t.type;
           return (
             <button
               key={t.type}
               onClick={() => onSelectTool(t.type)}
-              className={`w-8 h-8 rounded flex items-center justify-center transition-colors relative group ${
+              className={`w-7 h-7 rounded flex items-center justify-center transition-colors relative group cursor-pointer ${
                 isActive
-                  ? 'bg-[#2962ff] text-white shadow-md'
+                  ? 'bg-[#2962ff]/20 text-[#2962ff]'
                   : 'text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]'
               }`}
               title={`${t.label} (${t.shortcut})`}
@@ -104,7 +104,7 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
               {t.icon}
 
               {/* Tooltip */}
-              <div className="absolute left-full ml-2 px-2 py-1 bg-[#131722] text-white text-[11px] font-sans rounded shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 border border-[#2a2e39]">
+              <div className="absolute left-full ml-2 px-2 py-1 bg-[#1e222d] text-[#d1d4dc] text-[11px] font-sans rounded shadow-xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 border border-[#2a2e39]">
                 <span>{t.label}</span>
                 <span className="ml-1.5 text-[10px] text-[#787b86] font-mono">[{t.shortcut}]</span>
               </div>
@@ -112,17 +112,17 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
           );
         })}
 
-        <div className="w-6 h-[1px] bg-[#2a2e39] my-1" />
+        <div className="w-5 h-[1px] bg-[#2a2e39] my-1" />
 
         {/* Color Swatch Button */}
         <div className="relative">
           <button
             onClick={() => setShowColorPicker(!showColorPicker)}
-            className="w-8 h-8 rounded flex items-center justify-center hover:bg-[#2a2e39] transition-colors group relative"
+            className="w-7 h-7 rounded flex items-center justify-center hover:bg-[#2a2e39] transition-colors group relative cursor-pointer"
             title="Drawing Color"
           >
             <div
-              className="w-4 h-4 rounded-full border border-white/30 shadow-sm"
+              className="w-3.5 h-3.5 rounded-full border border-white/20 shadow-sm"
               style={{ backgroundColor: currentColor }}
             />
           </button>
@@ -139,7 +139,7 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
                     onChangeColor(c);
                     setShowColorPicker(false);
                   }}
-                  className={`w-6 h-6 rounded-full border transition-transform ${
+                  className={`w-5 h-5 rounded-full border transition-transform ${
                     currentColor === c ? 'border-white scale-110 shadow-sm' : 'border-transparent hover:scale-105'
                   }`}
                   style={{ backgroundColor: c }}
@@ -151,17 +151,17 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
       </div>
 
       {/* Bottom Section: Tool Modifiers (Magnet, Lock, Hide, Undo, Trash) */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-0.5">
         {/* Magnet Mode */}
         {onToggleMagnet && (
           <button
             onClick={onToggleMagnet}
-            className={`w-8 h-8 rounded flex items-center justify-center transition-colors relative group ${
+            className={`w-7 h-7 rounded flex items-center justify-center transition-colors relative group cursor-pointer ${
               isMagnetActive ? 'text-[#2962ff] bg-[#2962ff]/20' : 'text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]'
             }`}
             title="Magnet Mode (Snap to candle high/low)"
           >
-            <Magnet className="w-4 h-4" />
+            <Magnet className="w-3.5 h-3.5" />
           </button>
         )}
 
@@ -169,12 +169,12 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
         {onToggleLock && (
           <button
             onClick={onToggleLock}
-            className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
+            className={`w-7 h-7 rounded flex items-center justify-center transition-colors cursor-pointer ${
               isLocked ? 'text-amber-400 bg-amber-400/20' : 'text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]'
             }`}
             title={isLocked ? 'Unlock All Drawings' : 'Lock All Drawings'}
           >
-            {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+            {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
           </button>
         )}
 
@@ -182,12 +182,12 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
         {onToggleHide && (
           <button
             onClick={onToggleHide}
-            className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
+            className={`w-7 h-7 rounded flex items-center justify-center transition-colors cursor-pointer ${
               isHidden ? 'text-[#f23645] bg-[#f23645]/20' : 'text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]'
             }`}
             title={isHidden ? 'Show All Drawings' : 'Hide All Drawings'}
           >
-            {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {isHidden ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
           </button>
         )}
 
@@ -195,22 +195,22 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
         <button
           onClick={onUndo}
           disabled={!canUndo}
-          className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
-            canUndo ? 'text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39]' : 'text-[#787b86]/30 cursor-not-allowed'
+          className={`w-7 h-7 rounded flex items-center justify-center transition-colors ${
+            canUndo ? 'text-[#787b86] hover:text-[#d1d4dc] hover:bg-[#2a2e39] cursor-pointer' : 'text-[#787b86]/30 cursor-not-allowed'
           }`}
           title="Undo Drawing (Ctrl+Z)"
         >
-          <Undo2 className="w-4 h-4" />
+          <Undo2 className="w-3.5 h-3.5" />
         </button>
 
         {/* Delete Selected Object Button */}
         {hasSelection && (
           <button
             onClick={onDeleteSelected}
-            className="w-8 h-8 rounded flex items-center justify-center text-[#f23645] hover:bg-[#f23645]/20 transition-colors animate-pulse"
+            className="w-7 h-7 rounded flex items-center justify-center text-[#f23645] hover:bg-[#f23645]/20 transition-colors cursor-pointer"
             title="Delete Selected Drawing (Del / Backspace)"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         )}
 
@@ -222,7 +222,7 @@ export const TVDrawingToolbar: React.FC<TVDrawingToolbarProps> = ({
                 onClearAll();
               }
             }}
-            className="w-8 h-8 rounded flex items-center justify-center text-[#787b86] hover:text-[#f23645] hover:bg-[#2a2e39] transition-colors"
+            className="w-7 h-7 rounded flex items-center justify-center text-[#787b86] hover:text-[#f23645] hover:bg-[#2a2e39] transition-colors cursor-pointer"
             title={`Clear All (${drawingsCount} items)`}
           >
             <Trash2 className="w-3.5 h-3.5" />

@@ -305,7 +305,7 @@ export class LiquidityEngine {
       type,
       description: isSwept ? sweptLabel : label,
       time: c.time * 1000,
-      // Volume of the swing bar itself — a proxy for interest at the level, not a measured stop size
+      // Volume of the swing bar itself - a proxy for interest at the level, not a measured stop size
       estimatedVolume: Math.round(c.volume * 10) / 10,
       isSwept,
       sweptAtTime: isSwept ? sweptAtTime : undefined,
