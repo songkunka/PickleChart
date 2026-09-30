@@ -23,8 +23,8 @@ interface LiquidityRadarProps {
   currentPrice: number;
   symbol?: string;
   onPriceSelect?: (price: number) => void;
-  measureToolActive: boolean;
-  onToggleMeasureTool: () => void;
+  measureToolActive?: boolean;
+  onToggleMeasureTool?: () => void;
 }
 
 export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
@@ -34,10 +34,10 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
   currentPrice,
   symbol = 'XAUUSDT',
   onPriceSelect,
-  measureToolActive,
+  measureToolActive = false,
   onToggleMeasureTool,
 }) => {
-  type TabType = 'walls' | 'pools' | 'swept';
+  type TabType = 'swept' | 'walls' | 'pools';
   const [activeTab, setActiveTab] = useState<TabType>('swept');
   const [minVolFilter, setMinVolFilter] = useState<number>(1.0);
 
@@ -57,183 +57,174 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
   const maxWallVol = Math.max(1, ...limitWalls.map((w) => w.volume));
 
   return (
-    <div className="flex flex-col h-full bg-[#10141d] select-none font-mono text-[11px] text-slate-200">
-      {/* 1. Windows XP Header Toolbar */}
-      <div className="px-2 py-1 bg-[#ece9d8] border-b border-[#aca899] flex items-center justify-between font-sans text-xs">
-        <div className="flex items-center gap-1.5">
-          {/* Rebar Gripper */}
-          <div className="flex flex-col gap-[2px] pr-1 py-0.5 opacity-60">
-            <div className="flex gap-[2px]"><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /></div>
-            <div className="flex gap-[2px]"><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /></div>
-            <div className="flex gap-[2px]"><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /></div>
-          </div>
-          <Layers className="w-3.5 h-3.5 text-[#0055ea]" />
-          <span className="font-bold text-slate-900 text-xs">
-            Liquidity & Sweep
+    <div className="flex flex-col h-full bg-[#131722] select-none font-mono text-[11px] text-[#d1d4dc]">
+      {/* 1. Header Toolbar */}
+      <div className="px-3 py-2 bg-[#1e222d] border-b border-[#2a2e39] flex items-center justify-between font-sans">
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-[#2962ff]" />
+          <span className="font-bold text-xs text-[#e0e3eb] tracking-wide">
+            LIQUIDITY & SWEEP
           </span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-[1px] border-t border-l border-[#808080] border-r border-b border-white bg-white text-[#0055ea] font-mono font-bold">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2e39] text-[#2962ff] font-mono font-semibold">
             {symbol} {currentPrice > 0 ? `$${currentPrice.toFixed(2)}` : ''}
           </span>
         </div>
 
-        {/* Measure Tool Toggle (XP 3D Button) */}
+        {/* Measure Tool Toggle */}
         <button
           onClick={onToggleMeasureTool}
-          className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-sans font-semibold rounded-[2px] transition-all ${
+          className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-sans font-medium rounded transition-colors ${
             measureToolActive
-              ? 'bg-[#fbbf24] text-slate-950 border-t border-l border-[#b45309] border-r border-b border-white shadow-inner font-bold'
-              : 'bg-[#ece9d8] hover:bg-[#dfdbcc] active:bg-[#d0ccc0] border-t border-l border-white border-r border-b border-[#808080] text-slate-800'
+              ? 'bg-[#2962ff] text-white shadow-sm'
+              : 'bg-[#2a2e39] hover:bg-[#363a45] text-[#d1d4dc]'
           }`}
           title="Toggle Click & Drag Range Measurement Ruler on Chart"
         >
-          <Crosshair className="w-2.5 h-2.5 text-[#0055ea]" />
-          <span>{measureToolActive ? 'Measuring...' : 'Measure Tool'}</span>
+          <Crosshair className="w-3 h-3 text-white" />
+          <span>{measureToolActive ? 'Measuring...' : 'Measure'}</span>
         </button>
       </div>
 
-      {/* 2. Top Summary Metrics - Windows XP Inset Panels */}
-      <div className="p-2 bg-[#ece9d8] border-b border-[#aca899] space-y-1.5 text-[10px] font-sans">
+      {/* 2. Top Summary Metrics */}
+      <div className="p-3 bg-[#171b26] border-b border-[#2a2e39] space-y-2 text-[10px] font-sans">
         {/* Limit Order Imbalance Bar */}
         <div>
-          <div className="flex justify-between items-center text-slate-700 font-semibold mb-0.5">
-            <span className="flex items-center gap-1 text-[#008000]">
+          <div className="flex justify-between items-center text-[#787b86] font-semibold mb-1">
+            <span className="flex items-center gap-1 text-[#089981]">
               <TrendingUp className="w-3 h-3" /> Buy: {totalBuyLimitVol.toFixed(1)}
             </span>
-            <span className="text-slate-600 font-bold">{buyRatio.toFixed(0)}% / {(100 - buyRatio).toFixed(0)}%</span>
-            <span className="flex items-center gap-1 text-[#c00000]">
+            <span className="text-[#d1d4dc] font-bold">{buyRatio.toFixed(0)}% / {(100 - buyRatio).toFixed(0)}%</span>
+            <span className="flex items-center gap-1 text-[#f23645]">
               Sell: {totalSellLimitVol.toFixed(1)} <TrendingDown className="w-3 h-3" />
             </span>
           </div>
-          {/* Win32 Sunken Progress Track */}
-          <div className="w-full h-3 border-t border-l border-[#808080] border-r border-b border-white bg-white p-[1px] flex overflow-hidden">
+          {/* Modern Progress Track */}
+          <div className="w-full h-2 rounded bg-[#2a2e39] p-[1px] flex overflow-hidden">
             <div
-              className="bg-gradient-to-b from-[#5cdb6e] via-[#32cd32] to-[#228b22] h-full transition-all duration-300"
+              className="bg-[#089981] h-full transition-all duration-300 rounded-l"
               style={{ width: `${buyRatio}%` }}
             />
             <div
-              className="bg-gradient-to-b from-[#ff6b6b] via-[#e63946] to-[#b71c1c] h-full transition-all duration-300"
+              className="bg-[#f23645] h-full transition-all duration-300 rounded-r"
               style={{ width: `${100 - buyRatio}%` }}
             />
           </div>
         </div>
 
-        {/* Quick Highlights Grid - Win32 Sunken White Panels */}
-        <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-          <div className="bg-white p-1 rounded-[1px] border-t border-l border-[#808080] border-r border-b border-white shadow-inner">
-            <div className="text-slate-600 flex items-center gap-1 text-[9px] font-semibold">
-              <Sparkles className="w-2.5 h-2.5 text-[#d97706]" />
+        {/* Quick Highlights Grid */}
+        <div className="grid grid-cols-2 gap-2 pt-0.5">
+          <div className="bg-[#1e222d] p-2 rounded border border-[#2a2e39]">
+            <div className="text-[#787b86] flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider">
+              <Sparkles className="w-3 h-3 text-[#f59e0b]" />
               <span>Swept Volume</span>
             </div>
-            <div className="text-xs font-bold text-[#b45309] font-mono mt-0.5">
-              {totalSweptVol.toFixed(1)} <span className="text-[9px] text-slate-500 font-normal">Total</span>
+            <div className="text-xs font-bold text-[#f59e0b] font-mono mt-1">
+              {totalSweptVol.toFixed(1)} <span className="text-[9px] text-[#787b86] font-normal">Contracts</span>
             </div>
           </div>
-          <div className="bg-white p-1 rounded-[1px] border-t border-l border-[#808080] border-r border-b border-white shadow-inner">
-            <div className="text-slate-600 flex items-center gap-1 text-[9px] font-semibold">
-              <ShieldAlert className="w-2.5 h-2.5 text-[#0055ea]" />
+          <div className="bg-[#1e222d] p-2 rounded border border-[#2a2e39]">
+            <div className="text-[#787b86] flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-wider">
+              <ShieldAlert className="w-3 h-3 text-[#2962ff]" />
               <span>Est. SL/TP Pools</span>
             </div>
-            <div className="text-xs font-bold text-[#0055ea] font-mono mt-0.5">
-              {activePoolsCount} <span className="text-[9px] text-slate-500 font-normal">Active Near</span>
+            <div className="text-xs font-bold text-[#2962ff] font-mono mt-1">
+              {activePoolsCount} <span className="text-[9px] text-[#787b86] font-normal">Active Near</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 3. Windows XP Sub Tabs */}
-      <div className="flex items-end bg-[#ece9d8] border-b border-[#919b9c] px-1 pt-1 gap-1 shrink-0 font-sans">
+      {/* 3. TradingView Sub Tabs */}
+      <div className="flex bg-[#1e222d] border-b border-[#2a2e39] px-2 gap-2 shrink-0 font-sans">
         <button
           onClick={() => setActiveTab('swept')}
-          className={`flex-1 py-1 px-1 rounded-t-[3px] text-[10px] transition-all flex items-center justify-center gap-1 ${
+          className={`py-2 px-2 text-[11px] font-medium transition-colors flex items-center gap-1.5 border-b-2 ${
             activeTab === 'swept'
-              ? 'bg-[#ece9d8] text-black font-bold border-t-2 border-t-[#0055ea] border-x border-[#919b9c] -mb-[1px] z-10'
-              : 'bg-[#dfdbcc] hover:bg-[#eae7d8] text-[#333333] border-t border-x border-[#aca899]'
+              ? 'border-[#2962ff] text-[#2962ff]'
+              : 'border-transparent text-[#787b86] hover:text-[#d1d4dc]'
           }`}
         >
-          <CheckCircle2 className="w-2.5 h-2.5 text-[#008000]" />
+          <CheckCircle2 className="w-3 h-3" />
           <span>Swept ({sweptEvents.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('walls')}
-          className={`flex-1 py-1 px-1 rounded-t-[3px] text-[10px] transition-all flex items-center justify-center gap-1 ${
+          className={`py-2 px-2 text-[11px] font-medium transition-colors flex items-center gap-1.5 border-b-2 ${
             activeTab === 'walls'
-              ? 'bg-[#ece9d8] text-black font-bold border-t-2 border-t-[#0055ea] border-x border-[#919b9c] -mb-[1px] z-10'
-              : 'bg-[#dfdbcc] hover:bg-[#eae7d8] text-[#333333] border-t border-x border-[#aca899]'
+              ? 'border-[#2962ff] text-[#2962ff]'
+              : 'border-transparent text-[#787b86] hover:text-[#d1d4dc]'
           }`}
         >
-          <Flame className="w-2.5 h-2.5 text-[#d97706]" />
+          <Flame className="w-3 h-3" />
           <span>Walls ({limitWalls.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('pools')}
-          className={`flex-1 py-1 px-1 rounded-t-[3px] text-[10px] transition-all flex items-center justify-center gap-1 ${
+          className={`py-2 px-2 text-[11px] font-medium transition-colors flex items-center gap-1.5 border-b-2 ${
             activeTab === 'pools'
-              ? 'bg-[#ece9d8] text-black font-bold border-t-2 border-t-[#0055ea] border-x border-[#919b9c] -mb-[1px] z-10'
-              : 'bg-[#dfdbcc] hover:bg-[#eae7d8] text-[#333333] border-t border-x border-[#aca899]'
+              ? 'border-[#2962ff] text-[#2962ff]'
+              : 'border-transparent text-[#787b86] hover:text-[#d1d4dc]'
           }`}
         >
-          <ShieldAlert className="w-2.5 h-2.5 text-[#0055ea]" />
+          <ShieldAlert className="w-3 h-3" />
           <span>Pools ({liquidityPools.length})</span>
         </button>
       </div>
 
-      {/* 4. Tab Contents - Windows XP Sunken Win32 ListView */}
-      <div className="flex-1 overflow-y-auto bg-white border-t-2 border-l-2 border-[#808080] border-r border-b border-white font-sans text-xs">
-        {/* TAB 1: SWEPT ORDERS ("จุดที่ออเดอร์ถูกเก็บไปแล้ว") */}
+      {/* 4. Tab Contents */}
+      <div className="flex-1 overflow-y-auto bg-[#131722] font-sans text-xs">
+        {/* TAB 1: SWEPT ORDERS */}
         {activeTab === 'swept' && (
-          <div className="divide-y divide-[#eef0f3]">
+          <div className="divide-y divide-[#1e222d]">
             {sweptEvents.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs">
+              <div className="p-8 text-center text-[#787b86] text-xs">
                 Monitoring live order sweeps...
               </div>
             ) : (
-              sweptEvents.map((ev, idx) => {
+              sweptEvents.map((ev) => {
                 const isBuySwept = ev.aggressorSide === 'buy';
                 const d = new Date(ev.time);
                 const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const isEven = idx % 2 === 0;
 
                 return (
                   <div
                     key={ev.id}
                     onClick={() => onPriceSelect && onPriceSelect(ev.price)}
-                    className={`p-2 cursor-pointer transition-colors space-y-1 ${
+                    className={`p-2.5 cursor-pointer transition-colors space-y-1.5 ${
                       ev.significant
-                        ? 'bg-[#fffbeb] hover:bg-[#fef3c7] border-l-4 border-[#f59e0b]'
-                        : isEven
-                          ? 'bg-white hover:bg-[#e8f0fe]'
-                          : 'bg-[#f8f9fa] hover:bg-[#e8f0fe]'
+                        ? 'bg-[#f59e0b]/10 hover:bg-[#f59e0b]/15 border-l-2 border-[#f59e0b]'
+                        : 'hover:bg-[#1e222d]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`px-1.5 py-0.2 rounded-[1px] text-[9px] font-bold border ${
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                             isBuySwept
-                              ? 'bg-[#ecfdf5] text-[#008000] border-[#86efac]'
-                              : 'bg-[#fff1f2] text-[#c00000] border-[#fca5a5]'
+                              ? 'bg-[#089981]/20 text-[#089981] border border-[#089981]/30'
+                              : 'bg-[#f23645]/20 text-[#f23645] border border-[#f23645]/30'
                           }`}
                         >
                           {isBuySwept ? 'BUY SWEEP' : 'SELL SWEEP'}
                         </span>
-                        <span className="font-bold text-slate-900 font-mono text-[11px]">${ev.price.toFixed(2)}</span>
+                        <span className="font-bold text-[#e0e3eb] font-mono text-[11px]">${ev.price.toFixed(2)}</span>
                         {ev.significant && (
-                          <span className="px-1 rounded-[1px] text-[9px] font-bold bg-[#f59e0b] text-[#1c1508]">★ KEY ABSORB</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/30">★ KEY ABSORB</span>
                         )}
                       </div>
-                      <span className="text-[9px] text-slate-500 font-mono flex items-center gap-1">
+                      <span className="text-[9px] text-[#787b86] font-mono flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5" />
                         {timeStr}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-[#b45309] font-bold">
-                        {ev.volume.toFixed(1)} <span className="text-slate-600 font-normal">Contracts</span>
+                      <span className="text-[#f59e0b] font-bold">
+                        {ev.volume.toFixed(1)} <span className="text-[#787b86] font-normal">Contracts</span>
                       </span>
-                      <span className="text-slate-600">
+                      <span className="text-[#787b86]">
                         ${ev.notional.toLocaleString()} USDT
                       </span>
                     </div>
@@ -241,31 +232,31 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
                     {ev.significant && ev.significanceTags && ev.significanceTags.length > 0 && (
                       <div className="flex flex-wrap gap-1 text-[9px] font-mono">
                         {ev.significanceTags.map((t) => (
-                          <span key={t} className="px-1 rounded-[1px] bg-[#fef3c7] text-[#92400e] border border-[#fde68a]">{t}</span>
+                          <span key={t} className="px-1.5 py-0.5 rounded bg-[#2a2e39] text-[#d1d4dc]">{t}</span>
                         ))}
                       </div>
                     )}
 
                     {/* Market Reaction badge */}
-                    <div className="flex items-center justify-between text-[9px] pt-1 border-t border-[#f0eee4]">
-                      <span className="text-slate-500 font-sans">Reaction:</span>
+                    <div className="flex items-center justify-between text-[9px] pt-1 border-t border-[#1e222d]">
+                      <span className="text-[#787b86] font-sans">Reaction:</span>
                       {ev.reaction === 'absorbed_reversal' ? (
-                        <span className="px-1.5 py-0.2 rounded-[1px] bg-[#fef3c7] text-[#92400e] font-semibold border border-[#fde68a]">
+                        <span className="px-1.5 py-0.5 rounded bg-[#f59e0b]/20 text-[#f59e0b] font-semibold border border-[#f59e0b]/30">
                           🛡️ Absorbed & Reversal {isBuySwept ? '↓' : '↑'}
                         </span>
                       ) : ev.reaction === 'breakout_continuation' ? (
-                        <span className="px-1.5 py-0.2 rounded-[1px] bg-[#e0f2fe] text-[#0369a1] font-semibold border border-[#bae6fd]">
+                        <span className="px-1.5 py-0.5 rounded bg-[#2962ff]/20 text-[#2962ff] font-semibold border border-[#2962ff]/30">
                           🚀 Breakout {isBuySwept ? '↑' : '↓'}
                         </span>
                       ) : ev.reaction === 'stalled' ? (
                         <span
-                          className="px-1.5 py-0.2 rounded-[1px] bg-[#f1f5f9] text-[#475569] font-semibold border border-[#cbd5e1]"
-                          title="No ±0.5 pt move either way within 30s of the sweep"
+                          className="px-1.5 py-0.5 rounded bg-[#2a2e39] text-[#787b86] font-semibold"
+                          title="No move within 30s"
                         >
                           ⏸ Stalled
                         </span>
                       ) : (
-                        <span className="text-slate-400 italic">Analyzing reaction...</span>
+                        <span className="text-[#787b86] italic">Analyzing reaction...</span>
                       )}
                     </div>
                   </div>
@@ -277,19 +268,19 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
 
         {/* TAB 2: LIMIT WALLS */}
         {activeTab === 'walls' && (
-          <div className="divide-y divide-[#eef0f3]">
+          <div className="divide-y divide-[#1e222d]">
             {/* Filter */}
-            <div className="px-2 py-1 flex items-center justify-between text-[10px] text-slate-600 bg-[#ece9d8] border-b border-[#aca899] font-sans">
+            <div className="px-3 py-1.5 flex items-center justify-between text-[10px] text-[#787b86] bg-[#1e222d] border-b border-[#2a2e39] font-sans">
               <span>Min Volume Filter:</span>
               <div className="flex gap-1">
                 {[1, 2, 5, 10].map((v) => (
                   <button
                     key={v}
                     onClick={() => setMinVolFilter(v)}
-                    className={`px-1.5 py-0.2 rounded-[1px] text-[10px] font-sans ${
+                    className={`px-2 py-0.5 rounded text-[10px] font-sans transition-colors ${
                       minVolFilter === v
-                        ? 'bg-[#fbbf24] text-slate-950 font-bold border-t border-l border-[#b45309] border-r border-b border-white shadow-inner'
-                        : 'bg-[#ece9d8] hover:bg-[#dfdbcc] border-t border-l border-white border-r border-b border-[#808080] text-slate-800'
+                        ? 'bg-[#2962ff] text-white font-bold'
+                        : 'bg-[#2a2e39] hover:bg-[#363a45] text-[#d1d4dc]'
                     }`}
                   >
                     ≥{v}
@@ -303,20 +294,17 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
               .map((w, idx) => {
                 const isBuy = w.side === 'buy';
                 const barWidth = Math.min(100, (w.volume / maxWallVol) * 100);
-                const isEven = idx % 2 === 0;
 
                 return (
                   <div
                     key={`${w.side}-${w.price}-${idx}`}
                     onClick={() => onPriceSelect && onPriceSelect(w.price)}
-                    className={`p-2 cursor-pointer transition-colors relative overflow-hidden ${
-                      isEven ? 'bg-white hover:bg-[#e8f0fe]' : 'bg-[#f8f9fa] hover:bg-[#e8f0fe]'
-                    }`}
+                    className="p-2.5 cursor-pointer transition-colors relative overflow-hidden hover:bg-[#1e222d]"
                   >
                     {/* Background Progress Bar */}
                     <div
-                      className={`absolute left-0 top-0 bottom-0 opacity-20 pointer-events-none transition-all ${
-                        isBuy ? 'bg-[#86efac]' : 'bg-[#fca5a5]'
+                      className={`absolute left-0 top-0 bottom-0 opacity-15 pointer-events-none transition-all ${
+                        isBuy ? 'bg-[#089981]' : 'bg-[#f23645]'
                       }`}
                       style={{ width: `${barWidth}%` }}
                     />
@@ -325,15 +313,15 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${
-                            isBuy ? 'bg-[#10b981]' : 'bg-[#ef4444]'
+                            isBuy ? 'bg-[#089981]' : 'bg-[#f23645]'
                           }`}
                         />
-                        <span className="font-bold text-slate-900 font-mono text-[11px]">${w.price.toFixed(2)}</span>
+                        <span className="font-bold text-[#e0e3eb] font-mono text-[11px]">${w.price.toFixed(2)}</span>
                         <span
-                          className={`text-[9px] font-bold px-1 rounded-[1px] border ${
+                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                             isBuy
-                              ? 'text-[#008000] bg-[#ecfdf5] border-[#86efac]'
-                              : 'text-[#c00000] bg-[#fff1f2] border-[#fca5a5]'
+                              ? 'text-[#089981] bg-[#089981]/20 border border-[#089981]/30'
+                              : 'text-[#f23645] bg-[#f23645]/20 border border-[#f23645]/30'
                           }`}
                         >
                           {isBuy ? 'LIMIT BUY' : 'LIMIT SELL'}
@@ -341,13 +329,13 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
                       </div>
 
                       <div className="text-right font-mono">
-                        <span className={`font-bold ${isBuy ? 'text-[#008000]' : 'text-[#c00000]'}`}>
+                        <span className={`font-bold ${isBuy ? 'text-[#089981]' : 'text-[#f23645]'}`}>
                           {w.volume.toFixed(1)} XAU
                         </span>
                       </div>
                     </div>
 
-                    <div className="relative z-10 flex items-center justify-between text-[9px] text-slate-500 font-mono mt-1">
+                    <div className="relative z-10 flex items-center justify-between text-[9px] text-[#787b86] font-mono mt-1">
                       <span>Dist: {w.distance >= 0 ? `+${w.distance.toFixed(2)}` : w.distance.toFixed(2)} ({w.distancePercent.toFixed(2)}%)</span>
                       <span>${w.notional.toLocaleString()} USDT</span>
                     </div>
@@ -359,73 +347,66 @@ export const LiquidityRadar: React.FC<LiquidityRadarProps> = ({
 
         {/* TAB 3: SL / TP LIQUIDITY POOLS */}
         {activeTab === 'pools' && (
-          <div className="divide-y divide-[#eef0f3]">
+          <div className="divide-y divide-[#1e222d]">
             {liquidityPools.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-xs font-sans">
+              <div className="p-8 text-center text-[#787b86] text-xs font-sans">
                 Scanning swing highs & lows for SL/TP pools...
               </div>
             ) : (
-              liquidityPools.map((pool, idx) => {
+              liquidityPools.map((pool) => {
                 const isBSL = pool.type === 'BSL';
-                const isEven = idx % 2 === 0;
 
                 return (
                   <div
                     key={pool.id}
                     onClick={() => onPriceSelect && onPriceSelect(pool.price)}
-                    className={`p-2 cursor-pointer transition-colors space-y-1 ${
+                    className={`p-2.5 cursor-pointer transition-colors space-y-1.5 ${
                       pool.isSwept
-                        ? 'opacity-60 bg-[#f3f4f6]'
-                        : isEven
-                        ? 'bg-white hover:bg-[#e8f0fe]'
-                        : 'bg-[#f8f9fa] hover:bg-[#e8f0fe]'
+                        ? 'opacity-50'
+                        : 'hover:bg-[#1e222d]'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`px-1.5 py-0.2 rounded-[1px] text-[9px] font-bold border ${
+                          className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                             isBSL
-                              ? 'bg-[#fef3c7] text-[#92400e] border-[#fde68a]'
-                              : 'bg-[#e0f2fe] text-[#0369a1] border-[#bae6fd]'
+                              ? 'bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/30'
+                              : 'bg-[#2962ff]/20 text-[#2962ff] border border-[#2962ff]/30'
                           }`}
                         >
                           {pool.type}
                         </span>
-                        <span className={`font-bold font-mono text-[11px] ${pool.isSwept ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                        <span className={`font-bold font-mono text-[11px] ${pool.isSwept ? 'line-through text-[#787b86]' : 'text-[#e0e3eb]'}`}>
                           ${pool.price.toFixed(2)}
                         </span>
                       </div>
 
                       {pool.isSwept ? (
-                        <span className="flex items-center gap-1 text-[9px] font-semibold text-[#008000] bg-[#ecfdf5] px-1.5 py-0.5 rounded-[1px] border border-[#86efac]">
+                        <span className="flex items-center gap-1 text-[9px] font-semibold text-[#089981] bg-[#089981]/20 px-1.5 py-0.5 rounded border border-[#089981]/30">
                           <CheckCircle2 className="w-2.5 h-2.5" />
                           SWEPT
                         </span>
                       ) : (
-                        <span className="text-[9px] text-[#b45309] font-bold font-sans">
+                        <span className="text-[9px] text-[#f59e0b] font-semibold font-sans">
                           Active Pool
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between text-[10px] font-mono">
-                      <span className="text-slate-500 font-sans text-[9px]">{pool.description}</span>
-                      <span className="font-semibold text-slate-800">
+                      <span className="text-[#787b86] font-sans text-[9px]">{pool.description}</span>
+                      <span className="font-semibold text-[#d1d4dc]">
                         Swing vol ~{pool.estimatedVolume.toFixed(1)} XAU
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[9px] text-slate-500 font-mono pt-0.5">
+                    <div className="flex items-center justify-between text-[9px] text-[#787b86] font-mono pt-0.5">
                       <span>Distance: {pool.distance.toFixed(2)} pts</span>
                       {pool.sweptVolume !== undefined && (
                         <span
-                          className="text-[#008000] font-bold"
-                          title={
-                            pool.sweptVolumeSource === 'candle'
-                              ? 'No tick data for the sweep bar: whole-bar volume shown (upper bound)'
-                              : 'Volume traded beyond the level during the sweep bar'
-                          }
+                          className="text-[#089981] font-bold"
+                          title="Volume traded beyond the level during the sweep bar"
                         >
                           Vol beyond: {pool.sweptVolume.toFixed(1)} XAU{pool.sweptVolumeSource === 'candle' ? ' (bar)' : ''}
                         </span>

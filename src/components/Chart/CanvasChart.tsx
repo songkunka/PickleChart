@@ -9,7 +9,9 @@ import { LiquidityEngine } from '../../services/liquidityEngine';
 import { timeframeToSeconds } from '../../services/candleAggregator';
 import { computeVolumeProfile, pickBinSize, VolumeProfile } from '../../services/volumeProfile';
 
-import { DrawingToolbar } from './DrawingToolbar';
+import { TVDrawingToolbar } from './TVDrawingToolbar';
+import { FloatingDrawingBar } from './FloatingDrawingBar';
+import { ChartContextMenu } from './ChartContextMenu';
 
 interface CanvasChartProps {
   candles: Candle[];
@@ -111,6 +113,14 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
   } | null>(null);
   const [measurementResult, setMeasurementResult] = useState<RangeMeasurementResult | null>(null);
 
+  // Context Menu State
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+    price: number;
+  } | null>(null);
+
   // Selected drawing & active draft state
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null);
   const [activeDraft, setActiveDraft] = useState<{
@@ -171,6 +181,27 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         if (drawings.length > 0) {
           onUpdateDrawings?.(drawings.slice(0, -1));
         }
+      } else if (e.altKey && e.key.toLowerCase() === 'h') {
+        e.preventDefault();
+        if (hoverPos && containerRef.current && viewport) {
+          const rect = containerRef.current.getBoundingClientRect();
+          const transforms = getTransforms(rect.width, rect.height, viewport);
+          if (transforms) {
+            const price = transforms.yToPrice(hoverPos.y);
+            const newDrawing: DrawingItem = {
+              id: `hr_${Date.now()}`,
+              type: 'horizontal_ray',
+              price1: price,
+              time1: viewport.minTime,
+              color: drawingColor,
+              createdAt: Date.now(),
+            };
+            onUpdateDrawings?.([...drawings, newDrawing]);
+          }
+        }
+      } else if (e.altKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault();
+        handleResetView();
       } else if (e.key.toLowerCase() === 'v') {
         onSelectDrawingTool?.('select');
       } else if (e.key.toLowerCase() === 't') {
@@ -192,7 +223,7 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [drawings, selectedDrawingId, onUpdateDrawings, onSelectDrawingTool, onToggleMeasureTool]);
+  }, [drawings, selectedDrawingId, onUpdateDrawings, onSelectDrawingTool, onToggleMeasureTool, hoverPos, viewport, drawingColor]);
 
   // Layout metrics
   const RIGHT_MARGIN = 85; // Price scale + Bookmap Depth profile
@@ -2292,125 +2323,194 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         onMouseLeave={handleMouseLeave}
         onDoubleClick={handleDoubleClick}
         onWheel={handleWheel}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          if (!containerRef.current || !viewport) return;
+          const rect = containerRef.current.getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          const transforms = getTransforms(rect.width, rect.height, viewport);
+          if (transforms) {
+            const price = transforms.yToPrice(y);
+            setContextMenu({ isOpen: true, x: e.clientX, y: e.clientY, price });
+          }
+        }}
         style={{ cursor: getCursorStyle() }}
         className="relative z-10 w-full h-full block"
       />
 
-      {/* Windows XP Drawing Toolbox */}
-      <DrawingToolbar
-        activeTool={activeDrawingTool}
-        onSelectTool={(t) => {
-          if (t === 'measure') {
-            onToggleMeasureTool?.();
-            onSelectDrawingTool?.('select');
-          } else {
-            onSelectDrawingTool?.(t);
-          }
-        }}
+      {/* TradingView Left Drawing Toolbar */}
+      <div className="absolute left-0 top-0 bottom-0 z-20">
+        <TVDrawingToolbar
+          activeTool={activeDrawingTool}
+          onSelectTool={(t) => {
+            if (t === 'measure') {
+              onToggleMeasureTool?.();
+              onSelectDrawingTool?.('select');
+            } else {
+              onSelectDrawingTool?.(t);
+            }
+          }}
+          currentColor={drawingColor}
+          onChangeColor={(c) => onDrawingColorChange?.(c)}
+          onUndo={() => {
+            if (drawings.length > 0) onUpdateDrawings?.(drawings.slice(0, -1));
+          }}
+          onClearAll={() => onUpdateDrawings?.([])}
+          onDeleteSelected={() => {
+            if (selectedDrawingId) {
+              onUpdateDrawings?.(drawings.filter((d) => d.id !== selectedDrawingId));
+              setSelectedDrawingId(null);
+            }
+          }}
+          hasSelection={!!selectedDrawingId}
+          canUndo={drawings.length > 0}
+          drawingsCount={drawings.length}
+        />
+      </div>
+
+      {/* Floating Action Bar for Selected Drawing Object */}
+      <FloatingDrawingBar
+        selectedId={selectedDrawingId}
         currentColor={drawingColor}
         onChangeColor={(c) => onDrawingColorChange?.(c)}
-        onUndo={() => {
-          if (drawings.length > 0) onUpdateDrawings?.(drawings.slice(0, -1));
-        }}
-        onClearAll={() => onUpdateDrawings?.([])}
-        onDeleteSelected={() => {
+        onDelete={() => {
           if (selectedDrawingId) {
             onUpdateDrawings?.(drawings.filter((d) => d.id !== selectedDrawingId));
             setSelectedDrawingId(null);
           }
         }}
-        hasSelection={!!selectedDrawingId}
-        canUndo={drawings.length > 0}
-        drawingsCount={drawings.length}
+        onClose={() => setSelectedDrawingId(null)}
       />
 
-      {/* Windows XP Floating Market Legend Tool Window */}
-      <div className="absolute top-3 left-3 flex flex-col bg-[#ece9d8] border-2 border-[#0055ea] rounded-sm shadow-xl z-20 text-slate-900 select-none font-sans text-xs">
-        {/* XP Mini Window Titlebar */}
-        <div className="bg-gradient-to-r from-[#0055ea] via-[#2470f5] to-[#0055ea] text-white px-2 py-0.5 text-[10px] font-bold flex items-center justify-between shadow-sm cursor-move">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span className="tracking-wide">Market Legend - {symbol} [{timeframe.toUpperCase()}]</span>
-          </div>
-          <button
-            onClick={handleResetView}
-            className={`px-1.5 py-0.2 rounded text-[9px] font-bold transition-all border ${
-              autoFollow
-                ? 'bg-[#3cb371] text-white border-white/60 shadow-sm'
-                : 'bg-white/20 hover:bg-white/40 text-white border-transparent'
-            }`}
-            title="Auto-follow recent price & reset zoom"
-          >
-            {autoFollow ? '● Auto' : 'Reset'}
-          </button>
+      {/* Right-Click Context Menu */}
+      {contextMenu && (
+        <ChartContextMenu
+          isOpen={contextMenu.isOpen}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          price={contextMenu.price}
+          onClose={() => setContextMenu(null)}
+          onResetView={handleResetView}
+          onAddHorizontalLine={(p) => {
+            const newDrawing: DrawingItem = {
+              id: `hr_${Date.now()}`,
+              type: 'horizontal_ray',
+              price1: p,
+              time1: viewport ? viewport.minTime : Date.now() / 1000,
+              color: drawingColor,
+              createdAt: Date.now(),
+            };
+            onUpdateDrawings?.([...drawings, newDrawing]);
+          }}
+          onOpenSettings={() => {
+            // Context menu settings trigger
+          }}
+        />
+      )}
+
+      {/* TradingView Top-Left Floating Data Legend */}
+      <div className="absolute top-2.5 left-14 z-20 pointer-events-none flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono select-none">
+        <div className="flex items-center gap-1.5 font-bold text-white bg-[#1e222d]/80 px-2 py-0.5 rounded border border-[#2a2e39] backdrop-blur-sm">
+          <span>{symbol}</span>
+          <span className="text-[#2962ff]">·</span>
+          <span className="text-[#787b86]">{timeframe}</span>
+          <span className="text-[#2962ff]">·</span>
+          <span className="text-[#787b86]">BINANCE</span>
         </div>
 
-        {/* XP Mini Window Content */}
-        <div className="px-2 py-1 flex items-center gap-2.5 text-[11px] bg-[#ece9d8]">
-          <span className="font-bold text-[#0055ea] font-mono">{symbol}</span>
-          <span className="text-[#aca899]">|</span>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-sm bg-sky-500 border border-slate-700 inline-block" />
-              <span className="text-slate-700 text-[10px]">Limit Wall</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-slate-700 inline-block" />
-              <span className="text-slate-700 text-[10px]">Fill Buy</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 border border-slate-700 inline-block" />
-              <span className="text-slate-700 text-[10px]">Fill Sell</span>
-            </div>
-          </div>
-
-          {measureToolActive && (
-            <>
-              <span className="text-[#aca899]">|</span>
-              <span className="text-[#d97706] font-bold text-[10px] animate-pulse flex items-center gap-1">
-                <span>📐 Measuring</span>
-                {onToggleMeasureTool && (
-                  <button onClick={onToggleMeasureTool} className="text-slate-500 hover:text-black">✕</button>
-                )}
+        {candles.length > 0 && (() => {
+          const latest = candles[candles.length - 1];
+          const change = latest.close - latest.open;
+          const changePct = latest.open > 0 ? (change / latest.open) * 100 : 0;
+          const isUp = change >= 0;
+          return (
+            <div className="flex items-center gap-2 bg-[#131722]/80 px-2.5 py-0.5 rounded border border-[#2a2e39] backdrop-blur-sm text-[11px]">
+              <span className="text-[#787b86]">O <strong className="text-[#d1d4dc]">{latest.open.toFixed(2)}</strong></span>
+              <span className="text-[#787b86]">H <strong className="text-[#d1d4dc]">{latest.high.toFixed(2)}</strong></span>
+              <span className="text-[#787b86]">L <strong className="text-[#d1d4dc]">{latest.low.toFixed(2)}</strong></span>
+              <span className="text-[#787b86]">C <strong className="text-[#d1d4dc]">{latest.close.toFixed(2)}</strong></span>
+              <span className={`font-bold ${isUp ? 'text-[#089981]' : 'text-[#f23645]'}`}>
+                {isUp ? '+' : ''}{change.toFixed(2)} ({isUp ? '+' : ''}{changePct.toFixed(2)}%)
               </span>
-            </>
-          )}
-        </div>
+              <span className="text-[#787b86]">Vol <strong className="text-white">{latest.volume.toFixed(1)}</strong></span>
+              {latest.buyVolume !== undefined && latest.sellVolume !== undefined && (
+                <span className="text-[#787b86]">
+                  Δ <strong className={latest.buyVolume >= latest.sellVolume ? 'text-[#089981]' : 'text-[#f23645]'}>
+                    {latest.buyVolume >= latest.sellVolume ? '+' : ''}{(latest.buyVolume - latest.sellVolume).toFixed(1)}
+                  </strong>
+                </span>
+              )}
+            </div>
+          );
+        })()}
+
+        {measureToolActive && (
+          <div className="bg-[#f59e0b]/20 border border-[#f59e0b] px-2 py-0.5 rounded text-amber-300 text-[11px] font-sans flex items-center gap-1.5 animate-pulse">
+            <span>📐 Ruler Active (Click & Drag range on chart)</span>
+            {onToggleMeasureTool && (
+              <button onClick={onToggleMeasureTool} className="pointer-events-auto hover:text-white ml-1">✕</button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Windows XP Tooltip for Big Trade Hover */}
+      {/* TradingView Bottom-Right Auto Scale & Reset Button */}
+      <div className="absolute bottom-8 right-24 z-30 flex items-center gap-1">
+        <button
+          onClick={handleResetView}
+          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all shadow-md border ${
+            autoFollow
+              ? 'bg-[#2962ff] text-white border-[#2962ff]'
+              : 'bg-[#1e222d] text-[#787b86] hover:text-white border-[#2a2e39]'
+          }`}
+          title="Toggle Auto Scale & Follow Price"
+        >
+          Auto
+        </button>
+        <button
+          onClick={handleResetView}
+          className="px-1.5 py-0.5 rounded text-[10px] bg-[#1e222d] text-[#787b86] hover:text-white border border-[#2a2e39] hover:bg-[#2a2e39] transition-all"
+          title="Reset View (Fit to screen)"
+        >
+          ⟲
+        </button>
+      </div>
+
+      {/* TradingView Dark Tooltip for Big Trade Hover */}
       {hoveredBigTrade && hoverPos && (
         <div
-          className="absolute pointer-events-none z-30 bg-[#ffffe1] border border-black p-2 shadow-[2px_2px_4px_rgba(0,0,0,0.4)] text-slate-900 text-xs font-sans select-none"
+          className="absolute pointer-events-none z-30 bg-[#1e222d]/95 border border-[#2a2e39] p-2.5 rounded-lg shadow-2xl text-[#d1d4dc] text-xs font-mono select-none backdrop-blur-md"
           style={{
             left: Math.min(window.innerWidth - 240, hoverPos.x + 16),
             top: Math.max(10, hoverPos.y - 70),
           }}
         >
-          <div className="flex items-center gap-2 mb-1 pb-1 border-b border-[#aca899]">
+          <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-[#2a2e39]">
             <span
-              className={`font-bold uppercase px-1 py-0.2 rounded-[1px] text-[10px] ${
-                hoveredBigTrade.side === 'buy' ? 'bg-[#ecfdf5] text-[#008000] border border-[#86efac]' : 'bg-[#fff1f2] text-[#c00000] border-[#fca5a5]'
+              className={`font-bold uppercase px-1.5 py-0.5 rounded text-[10px] ${
+                hoveredBigTrade.side === 'buy'
+                  ? 'bg-[#089981]/20 text-[#089981] border border-[#089981]/40'
+                  : 'bg-[#f23645]/20 text-[#f23645] border border-[#f23645]/40'
               }`}
             >
-              BIG TRADE ({hoveredBigTrade.side.toUpperCase()})
+              BIG {hoveredBigTrade.side.toUpperCase()}
             </span>
-            <span className="font-mono text-slate-600 text-[10px]">
+            <span className="text-[#787b86] text-[10px]">
               {new Date(hoveredBigTrade.time).toLocaleTimeString()}
             </span>
           </div>
-          <div className="space-y-0.5 font-mono text-[11px]">
+          <div className="space-y-1 text-[11px]">
             <div className="flex justify-between gap-4">
-              <span className="text-slate-600">Price:</span>
-              <span className="font-bold text-slate-950">${hoveredBigTrade.price.toFixed(2)}</span>
+              <span className="text-[#787b86]">Price:</span>
+              <span className="font-bold text-white">${hoveredBigTrade.price.toFixed(2)}</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-slate-600">Contracts:</span>
-              <span className="font-bold text-[#b45309]">{hoveredBigTrade.qty.toFixed(1)}</span>
+              <span className="text-[#787b86]">Contracts:</span>
+              <span className="font-bold text-amber-400">{hoveredBigTrade.qty.toFixed(1)}</span>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-slate-600">Total Value:</span>
-              <span className="font-bold text-[#008000]">
+              <span className="text-[#787b86]">Total Value:</span>
+              <span className="font-bold text-[#089981]">
                 ${(hoveredBigTrade.price * hoveredBigTrade.qty).toLocaleString(undefined, { maximumFractionDigits: 2 })} USDT
               </span>
             </div>
@@ -2418,19 +2518,19 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
         </div>
       )}
 
-      {/* Windows XP Interactive Range Measurement Tool Window */}
+      {/* TradingView Dark Interactive Range Measurement Card */}
       {measurementResult && measureBox && (
         <div
-          className="absolute z-30 bg-[#ece9d8] border-2 border-[#0055ea] rounded-t-sm rounded-b-none shadow-2xl text-xs font-sans max-w-sm select-none"
+          className="absolute z-30 bg-[#1e222d] border border-[#2a2e39] rounded-lg shadow-2xl text-xs font-sans max-w-sm select-none overflow-hidden"
           style={{
-            left: Math.min(window.innerWidth - 380, Math.max(20, Math.min(measureBox.startX, measureBox.currentX) + 12)),
+            left: Math.min(window.innerWidth - 380, Math.max(70, Math.min(measureBox.startX, measureBox.currentX) + 12)),
             top: Math.max(50, Math.min(measureBox.startY, measureBox.currentY) - 150),
           }}
         >
-          {/* XP Mini Window Titlebar */}
-          <div className="bg-gradient-to-r from-[#0055ea] via-[#2470f5] to-[#0055ea] text-white px-2 py-0.5 font-bold text-[11px] flex items-center justify-between shadow-sm cursor-move">
+          {/* Header */}
+          <div className="bg-[#131722] border-b border-[#2a2e39] text-white px-3 py-1.5 font-bold text-xs flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="w-2 h-2 rounded-full bg-[#2962ff]" />
               <span>Liquidity Zone Ruler</span>
             </div>
             <button
@@ -2438,68 +2538,62 @@ export const CanvasChart: React.FC<CanvasChartProps> = ({
                 setMeasureBox(null);
                 setMeasurementResult(null);
               }}
-              className="w-4 h-4 rounded-[1px] bg-[#e81123] hover:bg-[#f13847] text-white font-bold flex items-center justify-center text-[10px] border border-white/40"
+              className="w-4 h-4 rounded text-[#787b86] hover:text-white hover:bg-[#2a2e39] flex items-center justify-center text-xs"
               title="Close"
             >
               ✕
             </button>
           </div>
 
-          <div className="p-2 space-y-1.5 text-slate-900">
+          <div className="p-2.5 space-y-2 text-[#d1d4dc]">
             {/* Price Span Inset Panel */}
-            <div className="bg-white border-t border-l border-[#808080] border-r border-b border-white p-1.5 rounded-[1px] flex items-center justify-between text-[11px] font-mono shadow-inner">
-              <span className="text-slate-800 font-bold">
+            <div className="bg-[#131722] border border-[#2a2e39] p-2 rounded flex items-center justify-between text-xs font-mono">
+              <span className="text-white font-bold">
                 ${measurementResult.minPrice.toFixed(2)} - ${measurementResult.maxPrice.toFixed(2)}
               </span>
-              <span className="text-[#0055ea] font-bold">
+              <span className="text-[#2962ff] font-bold">
                 Δ {measurementResult.priceSpan.toFixed(2)} pts
               </span>
             </div>
 
-            {/* Details Grid - Sunken Win32 Panels */}
-            <div className="space-y-1 text-[10px] font-sans bg-white border-t border-l border-[#808080] border-r border-b border-white p-1.5 rounded-[1px] shadow-inner">
+            {/* Details Grid */}
+            <div className="space-y-1 text-[11px] font-sans bg-[#131722] border border-[#2a2e39] p-2 rounded">
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Resting Buy Limits:</span>
-                <span className="text-[#008000] font-bold font-mono">
-                  {measurementResult.totalRestingBuy.toFixed(1)} XAU ({measurementResult.restingBuyCount} lvls)
+                <span className="text-[#787b86]">Resting Buy Limits:</span>
+                <span className="text-[#089981] font-bold font-mono">
+                  {measurementResult.totalRestingBuy.toFixed(1)} ({measurementResult.restingBuyCount} lvls)
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Resting Sell Limits:</span>
-                <span className="text-[#c00000] font-bold font-mono">
-                  {measurementResult.totalRestingSell.toFixed(1)} XAU ({measurementResult.restingSellCount} lvls)
+                <span className="text-[#787b86]">Resting Sell Limits:</span>
+                <span className="text-[#f23645] font-bold font-mono">
+                  {measurementResult.totalRestingSell.toFixed(1)} ({measurementResult.restingSellCount} lvls)
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pt-1 border-t border-[#ece9d8]">
-                <span className="text-slate-600">SL/TP Pools in Zone:</span>
-                <span className="text-[#0055ea] font-bold font-mono">
+              <div className="flex items-center justify-between pt-1 border-t border-[#2a2e39]">
+                <span className="text-[#787b86]">SL/TP Pools in Zone:</span>
+                <span className="text-[#2962ff] font-bold font-mono">
                   {measurementResult.pools.length} Pools ({measurementResult.pools.filter(p => !p.isSwept).length} Active)
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-slate-600">Orders Swept / Filled:</span>
-                <span className="text-[#b45309] font-bold font-mono">
-                  {measurementResult.totalFilledVolume.toFixed(1)} XAU
+                <span className="text-[#787b86]">Orders Filled:</span>
+                <span className="text-amber-400 font-bold font-mono">
+                  {measurementResult.totalFilledVolume.toFixed(1)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[9px] text-slate-500 pl-2">
-                <span>↳ Buy: <strong className="text-[#008000] font-mono">{measurementResult.buyFillVolume.toFixed(1)}</strong></span>
-                <span>↳ Sell: <strong className="text-[#c00000] font-mono">{measurementResult.sellFillVolume.toFixed(1)}</strong></span>
+              <div className="flex items-center justify-between text-[10px] text-[#787b86] pl-2">
+                <span>↳ Buy: <strong className="text-[#089981] font-mono">{measurementResult.buyFillVolume.toFixed(1)}</strong></span>
+                <span>↳ Sell: <strong className="text-[#f23645] font-mono">{measurementResult.sellFillVolume.toFixed(1)}</strong></span>
               </div>
-              <div className="flex items-center justify-between pt-1 border-t border-[#ece9d8]">
-                <span className="text-slate-600">Volume Delta:</span>
-                <span className={`font-bold font-mono ${measurementResult.netDelta >= 0 ? 'text-[#008000]' : 'text-[#c00000]'}`}>
-                  {measurementResult.netDelta >= 0 ? '+' : ''}{measurementResult.netDelta.toFixed(1)} XAU
+              <div className="flex items-center justify-between pt-1 border-t border-[#2a2e39]">
+                <span className="text-[#787b86]">Volume Delta:</span>
+                <span className={`font-bold font-mono ${measurementResult.netDelta >= 0 ? 'text-[#089981]' : 'text-[#f23645]'}`}>
+                  {measurementResult.netDelta >= 0 ? '+' : ''}{measurementResult.netDelta.toFixed(1)}
                 </span>
               </div>
-
-              {measurementResult.recentSweeps.length > 0 && (
-                <div className="pt-1 border-t border-[#ece9d8] text-[#b45309] font-semibold flex items-center gap-1 text-[9px]">
-                  <span>⚡ {measurementResult.recentSweeps.length} Swept Events in range</span>
-                </div>
-              )}
             </div>
           </div>
         </div>

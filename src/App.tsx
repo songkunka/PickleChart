@@ -6,14 +6,10 @@ import { CandleAggregator, isSubMinute } from './services/candleAggregator';
 import { TradeClusterEngine } from './services/tradeClusterEngine';
 import { LiquidityEngine } from './services/liquidityEngine';
 import { audioAlertService } from './services/audioAlert';
-import { TerminalHeader } from './components/Header/TerminalHeader';
+import { TradingViewHeader } from './components/Header/TradingViewHeader';
 import { CanvasChart } from './components/Chart/CanvasChart';
-import { BigTradeTape } from './components/BigTrades/BigTradeTape';
-import { DepthOfMarket } from './components/DOM/DepthOfMarket';
-import { LiquidityRadar } from './components/Liquidity/LiquidityRadar';
-import { OrderFlowStats } from './components/OrderFlow/OrderFlowStats';
-import { XPTitleBar } from './components/XP/XPTitleBar';
-import { XPStartMenu } from './components/XP/XPStartMenu';
+import { RightActionDock, RightDockPanel } from './components/Dock/RightActionDock';
+import { TVStatusBar } from './components/Footer/TVStatusBar';
 import { ChartSettingsModal } from './components/Settings/ChartSettingsModal';
 import { SettingsStorage } from './services/settingsStorage';
 import { ChartAppearanceSettings, ChartPreset } from './types/settings';
@@ -41,7 +37,6 @@ export function App() {
   const [drawingColor, setDrawingColor] = useState<string>('#f59e0b');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [resetViewTrigger, setResetViewTrigger] = useState<number>(0);
-  const [currentTimeStr, setCurrentTimeStr] = useState<string>('');
 
   // Big Trade and Audio Settings
   const [bigTradeThreshold, setBigTradeThreshold] = useState<number>(2.0); // Starts at 2.0 contracts
@@ -63,8 +58,8 @@ export function App() {
   const notifiedAbsorbRef = useRef<Set<string>>(new Set());
   const liveSinceRef = useRef<number>(Date.now());
 
-  // Panel View Mode: 'split' | 'dom' | 'tape' | 'liquidity'
-  const [panelView, setPanelView] = useState<'split' | 'dom' | 'tape' | 'liquidity'>('split');
+  // Right Action Dock Panel: 'dom' | 'tape' | 'liquidity' | 'stats' | null
+  const [activeRightPanel, setActiveRightPanel] = useState<RightDockPanel>('dom');
 
   // Order Flow metrics
   const [sessionBuyVol, setSessionBuyVol] = useState<number>(0);
@@ -335,16 +330,7 @@ export function App() {
     };
   }, [symbol, broker, liquidityEngine]);
 
-  // XP Clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTimeStr(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    };
-    updateTime();
-    const timer = setInterval(updateTime, 1000);
-    return () => clearInterval(timer);
-  }, []);
+
 
   const handleUpdateDrawings = (newDrawings: DrawingItem[]) => {
     setDrawings(newDrawings);
@@ -382,85 +368,36 @@ export function App() {
     setResetViewTrigger(Date.now());
   };
 
-  const getThemeFrameClass = () => {
-    if (settings.xpTheme === 'royale_noir') {
-      return {
-        desktop: 'bg-[#181a20]',
-        windowBorder: 'border-[#3b414d]',
-        taskbar: 'bg-gradient-to-r from-[#1c1e24] via-[#2a2d36] to-[#1c1e24] border-t border-[#3b414d]',
-        activeTask: 'bg-[#22252c] text-white border-t border-l border-black/60 border-r border-b border-white/20',
-      };
-    }
-    if (settings.xpTheme === 'metallic') {
-      return {
-        desktop: 'bg-[#2e3742]',
-        windowBorder: 'border-[#717b88]',
-        taskbar: 'bg-gradient-to-r from-[#8e98a5] via-[#b6c0cd] to-[#8e98a5] border-t border-[#717b88] text-slate-900',
-        activeTask: 'bg-[#c8d1dc] text-slate-900 border-t border-l border-black/40 border-r border-b border-white/40',
-      };
-    }
-    // Luna Blue
-    return {
-      desktop: 'bg-[#004e98]',
-      windowBorder: 'border-[#0055ea]',
-      taskbar: 'bg-gradient-to-r from-[#1f42b3] via-[#245edb] to-[#193a9d] border-t border-[#3b6fe8]',
-      activeTask: 'bg-[#163894] text-white border-t border-l border-black/60 border-r border-b border-white/20',
-    };
-  };
-
-  const themeClasses = getThemeFrameClass();
   const currentPrice = ticker ? ticker.price : (orderBook?.bestBid || 0);
 
   return (
-    <div className={`w-screen h-screen ${themeClasses.desktop} flex flex-col p-1 sm:p-1.5 overflow-hidden select-none font-sans text-slate-200`}>
-      {/* 1. Main Windows XP Application Window Frame */}
-      <div className={`flex-1 flex flex-col rounded-t-lg border-2 ${themeClasses.windowBorder} shadow-2xl overflow-hidden bg-[#0d1117] min-h-0`}>
-        {/* XP Titlebar & Classic Menu Bar */}
-        <XPTitleBar
-          symbol={symbol}
-          xpTheme={settings.xpTheme}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onSelectDrawingTool={setActiveDrawingTool}
-          onQuickToggleIndicator={handleQuickToggleIndicator}
-          activeIndicators={{
-            ema9: settings.indicators.ema9.enabled,
-            ema21: settings.indicators.ema21.enabled,
-            ema50: settings.indicators.ema50.enabled,
-            ema200: settings.indicators.ema200.enabled,
-            vwap: settings.indicators.vwap.enabled,
-            bollinger: settings.indicators.bollinger.enabled,
-            volumeProfile: settings.indicators.volumeProfile.enabled,
-            cvd: settings.indicators.cvd.enabled,
-          }}
-          onResetView={handleResetView}
-          onSelectSymbol={handleSelectSymbol}
-        />
+    <div className="w-screen h-screen bg-[#131722] flex flex-col overflow-hidden select-none font-sans text-[#d1d4dc]">
+      {/* 1. TradingView Top Header */}
+      <TradingViewHeader
+        symbol={symbol}
+        onSelectSymbol={handleSelectSymbol}
+        timeframe={timeframe}
+        onSelectTimeframe={setTimeframe}
+        ticker={ticker}
+        connectionStatus={connectionStatus}
+        bigTradeThreshold={bigTradeThreshold}
+        onChangeThreshold={handleThresholdChange}
+        isMuted={isMuted}
+        onToggleMute={handleToggleMute}
+        showLimitWalls={showLimitWalls}
+        onToggleLimitWalls={() => setShowLimitWalls(!showLimitWalls)}
+        showSLTPPools={showSLTPPools}
+        onToggleSLTPPools={() => setShowSLTPPools(!showSLTPPools)}
+        showSweptMarkers={showSweptMarkers}
+        onToggleSweptMarkers={() => setShowSweptMarkers(!showSweptMarkers)}
+        onResetView={handleResetView}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        indicators={settings.indicators}
+        onToggleIndicator={handleQuickToggleIndicator}
+      />
 
-        {/* PickleChart Terminal Header */}
-        <TerminalHeader
-          symbol={symbol}
-          onSelectSymbol={handleSelectSymbol}
-          timeframe={timeframe}
-          onSelectTimeframe={setTimeframe}
-          ticker={ticker}
-          connectionStatus={connectionStatus}
-          bigTradeThreshold={bigTradeThreshold}
-          onChangeThreshold={handleThresholdChange}
-          isMuted={isMuted}
-          onToggleMute={handleToggleMute}
-          showLimitWalls={showLimitWalls}
-          onToggleLimitWalls={() => setShowLimitWalls(!showLimitWalls)}
-          showSLTPPools={showSLTPPools}
-          onToggleSLTPPools={() => setShowSLTPPools(!showSLTPPools)}
-          showSweptMarkers={showSweptMarkers}
-          onToggleSweptMarkers={() => setShowSweptMarkers(!showSweptMarkers)}
-          measureToolActive={measureToolActive}
-          onToggleMeasureTool={() => setMeasureToolActive(!measureToolActive)}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-        />
-
-        {/* Main Split Chart & Trading Sidebar Workspace */}
-        <div className="flex-1 flex flex-row overflow-hidden w-full h-full min-h-0">
+      {/* 2. Main Workspace (Canvas Chart + Right Collapsible Action Dock) */}
+      <div className="flex-1 flex flex-row overflow-hidden w-full h-full min-h-0 bg-[#131722]">
           {/* High-Performance Canvas Chart */}
           <main className="flex-1 min-w-0 h-full relative overflow-hidden bg-[#11151c]">
             {/* Key absorption alerts */}
@@ -513,172 +450,33 @@ export function App() {
               drawingColor={drawingColor}
               onDrawingColorChange={setDrawingColor}
               resetViewTrigger={resetViewTrigger}
+              symbol={symbol}
             />
           </main>
 
-          {/* Right Side: DOM Ladder, Tape & Liquidity Radar */}
-          <aside className="w-80 shrink-0 h-full flex flex-col border-l border-[#aca899] bg-[#ece9d8] z-20">
-            {/* Windows XP Property Sheet Tabs */}
-            <div className="flex items-end bg-[#ece9d8] border-b border-[#919b9c] px-1.5 pt-1.5 gap-1 shrink-0 select-none">
-              <button
-                onClick={() => setPanelView('split')}
-                className={`py-1 px-3 rounded-t-[3px] text-[11px] font-sans transition-all flex items-center gap-1 ${
-                  panelView === 'split'
-                    ? 'bg-[#ece9d8] text-black font-bold border-t-2 border-t-[#0055ea] border-x border-[#919b9c] -mb-[1px] z-10 shadow-[0_-1px_2px_rgba(0,0,0,0.08)]'
-                    : 'bg-[#dfdbcc] hover:bg-[#eae7d8] text-[#333333] border-t border-x border-[#aca899] mb-0'
-                }`}
-              >
-                <span>Split</span>
-              </button>
-              <button
-                onClick={() => setPanelView('liquidity')}
-                className={`py-1 px-2.5 rounded-t-[3px] text-[11px] font-sans transition-all flex items-center gap-1 ${
-                  panelView === 'liquidity'
-                    ? 'bg-[#ece9d8] text-black font-bold border-t-2 border-t-[#0055ea] border-x border-[#919b9c] -mb-[1px] z-10 shadow-[0_-1px_2px_rgba(0,0,0,0.08)]'
-                    : 'bg-[#dfdbcc] hover:bg-[#eae7d8] text-[#333333] border-t border-x border-[#aca899] mb-0'
-                }`}
-                title="Liquidity Radar & Swept Orders Log"
-              >
-                <span>Liquidity</span>
-                {sweptEvents.length > 0 && (
-                  <span className={`text-[10px] ${panelView === 'liquidity' ? 'text-[#0055ea] font-bold' : 'text-slate-600'}`}>
-                    ({sweptEvents.length})
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setPanelView('dom')}
-                className={`py-1 px-3 rounded-t-[3px] text-[11px] font-sans transition-all flex items-center gap-1 ${
-                  panelView === 'dom'
-                    ? 'bg-[#ece9d8] text-black font-bold border-t-2 border-t-[#0055ea] border-x border-[#919b9c] -mb-[1px] z-10 shadow-[0_-1px_2px_rgba(0,0,0,0.08)]'
-                    : 'bg-[#dfdbcc] hover:bg-[#eae7d8] text-[#333333] border-t border-x border-[#aca899] mb-0'
-                }`}
-              >
-                <span>DOM</span>
-              </button>
-              <button
-                onClick={() => setPanelView('tape')}
-                className={`py-1 px-2.5 rounded-t-[3px] text-[11px] font-sans transition-all flex items-center gap-1 ${
-                  panelView === 'tape'
-                    ? 'bg-[#ece9d8] text-black font-bold border-t-2 border-t-[#0055ea] border-x border-[#919b9c] -mb-[1px] z-10 shadow-[0_-1px_2px_rgba(0,0,0,0.08)]'
-                    : 'bg-[#dfdbcc] hover:bg-[#eae7d8] text-[#333333] border-t border-x border-[#aca899] mb-0'
-                }`}
-              >
-                <span>Trades</span>
-                {bigTrades.length > 0 && (
-                  <span className={`text-[10px] ${panelView === 'tape' ? 'text-[#d97706] font-bold' : 'text-slate-600'}`}>
-                    ({bigTrades.length})
-                  </span>
-                )}
-              </button>
-            </div>
-
-            {/* Panel Body */}
-            {panelView === 'split' && (
-              <>
-                <div className="flex-1 overflow-hidden border-b border-[#aca899]">
-                  <DepthOfMarket
-                    orderBook={orderBook}
-                    currentPrice={currentPrice}
-                    recentTrades={recentTrades}
-                    symbol={symbol}
-                  />
-                </div>
-                <div className="h-64 overflow-hidden">
-                  <BigTradeTape trades={bigTrades} symbol={symbol} />
-                </div>
-              </>
-            )}
-
-            {panelView === 'liquidity' && (
-              <div className="flex-1 overflow-hidden">
-                <LiquidityRadar
-                  limitWalls={limitWalls}
-                  liquidityPools={liquidityPools}
-                  sweptEvents={sweptEvents}
-                  currentPrice={currentPrice}
-                  symbol={symbol}
-                  measureToolActive={measureToolActive}
-                  onToggleMeasureTool={() => setMeasureToolActive(!measureToolActive)}
-                />
-              </div>
-            )}
-
-            {panelView === 'dom' && (
-              <div className="flex-1 overflow-hidden">
-                <DepthOfMarket
-                  orderBook={orderBook}
-                  currentPrice={currentPrice}
-                  recentTrades={recentTrades}
-                  symbol={symbol}
-                />
-              </div>
-            )}
-
-            {panelView === 'tape' && (
-              <div className="flex-1 overflow-hidden">
-                <BigTradeTape trades={bigTrades} symbol={symbol} />
-              </div>
-            )}
-          </aside>
-        </div>
-
-        {/* Windows XP Win32 Status Bar at Bottom of Window */}
-        <OrderFlowStats
-          broker={broker}
-          symbol={symbol}
-          sessionBuyVolume={sessionBuyVol}
-          sessionSellVolume={sessionSellVol}
-          sessionDelta={sessionBuyVol - sessionSellVol}
-          tradeCount={tradeCount}
-          connectionStatus={connectionStatus}
-          depthCount={depthCount}
-        />
-      </div>
-
-      {/* 2. Windows XP Taskbar (Bottom of Desktop) */}
-      <div className={`h-8 w-full ${themeClasses.taskbar} flex items-center justify-between px-1 z-30 select-none text-xs shadow-lg`}>
-        {/* Left: XP Green Start Button & Active Task */}
-        <div className="flex items-center gap-1.5">
-          <XPStartMenu
+          {/* 3. TradingView Right Collapsible Action Dock (DOM, Trades, Liquidity, Stats) */}
+          <RightActionDock
+            activePanel={activeRightPanel}
+            onTogglePanel={setActiveRightPanel}
             symbol={symbol}
-            onSelectSymbol={handleSelectSymbol}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onResetView={handleResetView}
-            presets={presets}
-            onApplyPreset={handleApplyPreset}
+            currentPrice={currentPrice}
+            orderBook={orderBook}
+            recentTrades={recentTrades}
+            bigTrades={bigTrades}
+            limitWalls={limitWalls}
+            liquidityPools={liquidityPools}
+            sweptEvents={sweptEvents}
+            sessionBuyVol={sessionBuyVol}
+            sessionSellVol={sessionSellVol}
+            tradeCount={tradeCount}
+            depthCount={depthCount}
           />
-
-          {/* Windows XP Task Item (Pushed-in bevel) */}
-          <div className={`h-6 px-3 rounded flex items-center gap-1.5 font-semibold text-[11px] shadow-inner ${themeClasses.activeTask}`}>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="truncate max-w-[200px]">🥒 PickleChart - {symbol}</span>
-          </div>
         </div>
 
-        {/* Far Right: XP System Tray & Live Digital Clock */}
-        <div className="h-6 px-2.5 rounded bg-black/20 border-t border-l border-black/40 border-r border-b border-white/20 flex items-center gap-2.5 text-[11px] font-mono text-white/90">
-          {/* Mute/Audio Icon */}
-          <button
-            onClick={handleToggleMute}
-            className="hover:opacity-80 transition-opacity"
-            title={isMuted ? 'Unmute Alerts' : 'Mute Alerts'}
-          >
-            {isMuted ? <span className="text-rose-400 text-xs">🔇</span> : <span className="text-emerald-400 text-xs">🔊</span>}
-          </button>
+      {/* 4. TradingView Bottom Status Bar */}
+      <TVStatusBar symbol={symbol} connectionStatus={connectionStatus} />
 
-          {/* Network Activity Dual Monitor Icon */}
-          <div className="flex items-center" title={`Connected to ${broker.toUpperCase()} Stream (${depthCount} updates)`}>
-            <div className={`w-3 h-2 rounded-sm border border-white/40 flex items-center justify-center ${connectionStatus === 'connected' ? 'bg-sky-400' : 'bg-rose-500'}`}>
-              <div className="w-1.5 h-0.5 bg-white" />
-            </div>
-          </div>
-
-          <span>{currentTimeStr || '12:00:00'}</span>
-        </div>
-      </div>
-
-      {/* 3. Deep Chart Customization & Local-First Presets Modal */}
+      {/* 5. Chart Settings Modal */}
       <ChartSettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}

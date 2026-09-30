@@ -34,7 +34,6 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
     if (recentTrades.length === 0) return;
     const map = volumeAtPriceRef.current;
     for (const t of recentTrades) {
-      // Round to 0.50 or 0.10 tick
       const step = symbol.includes('QQQ') || symbol.includes('SPY') ? 0.10 : 0.50;
       const priceBucket = Math.round(t.price / step) * step;
       const cur = map.get(priceBucket) || { buy: 0, sell: 0, total: 0 };
@@ -57,8 +56,9 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
 
   if (!orderBook) {
     return (
-      <div className="flex flex-col h-full bg-[#12161f] border-l border-slate-800 p-4 text-center text-slate-500 font-mono text-xs justify-center">
-        Connecting Real-Time DOM...
+      <div className="flex flex-col h-full bg-[#131722] p-4 text-center text-[#787b86] font-mono text-xs justify-center items-center">
+        <div className="w-5 h-5 border-2 border-[#2962ff] border-t-transparent rounded-full animate-spin mb-2" />
+        <span>Connecting Real-Time DOM...</span>
       </div>
     );
   }
@@ -97,34 +97,28 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
   const spread = bestAsk > 0 && bestBid > 0 ? (bestAsk - bestBid) : 0;
 
   return (
-    <div className="flex flex-col h-full bg-[#10141d] border-l border-[#aca899] select-none font-mono text-[11px]">
-      {/* Windows XP DOM Header / Controls */}
-      <div className="px-2 py-1 bg-[#ece9d8] border-b border-[#aca899] flex items-center justify-between font-sans text-xs">
-        <div className="flex items-center gap-1.5">
-          {/* Rebar Gripper */}
-          <div className="flex flex-col gap-[2px] pr-1 py-0.5 opacity-60">
-            <div className="flex gap-[2px]"><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /></div>
-            <div className="flex gap-[2px]"><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /></div>
-            <div className="flex gap-[2px]"><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /><span className="w-[2px] h-[2px] bg-[#808080] border-r border-b border-white" /></div>
-          </div>
-          <span className="font-bold text-slate-900 text-xs">
-            DOM Ladder
+    <div className="flex flex-col h-full bg-[#131722] select-none font-mono text-[11px] text-[#d1d4dc]">
+      {/* TradingView / ATAS Header Controls */}
+      <div className="px-3 py-2 bg-[#1e222d] border-b border-[#2a2e39] flex items-center justify-between font-sans">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-xs text-[#e0e3eb] tracking-wide">
+            DOM LADDER
           </span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-[1px] border-t border-l border-[#808080] border-r border-b border-white bg-white text-[#0055ea] font-mono font-bold">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2a2e39] text-[#2962ff] font-mono font-semibold">
             {symbol}
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => {
               setLockedToMarket(true);
               setCenterPrice(currentPrice);
             }}
-            className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-sans font-semibold rounded-[2px] transition-all ${
+            className={`flex items-center gap-1 px-2 py-0.5 text-[10px] font-sans font-medium rounded transition-colors ${
               lockedToMarket
-                ? 'bg-[#fbbf24] text-slate-950 border-t border-l border-[#b45309] border-r border-b border-white shadow-inner font-bold'
-                : 'bg-[#ece9d8] hover:bg-[#dfdbcc] active:bg-[#d0ccc0] border-t border-l border-white border-r border-b border-[#808080] text-slate-800'
+                ? 'bg-[#2962ff]/20 text-[#2962ff] border border-[#2962ff]/40'
+                : 'bg-[#2a2e39] hover:bg-[#363a45] text-[#787b86]'
             }`}
           >
             {lockedToMarket ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
@@ -132,45 +126,45 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
           </button>
           <button
             onClick={() => setCenterPrice(currentPrice)}
-            className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-sans font-semibold rounded-[2px] bg-[#ece9d8] hover:bg-[#dfdbcc] active:bg-[#d0ccc0] border-t border-l border-white border-r border-b border-[#808080] text-slate-800 transition-all"
+            className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-sans font-medium rounded bg-[#2a2e39] hover:bg-[#363a45] text-[#d1d4dc] transition-colors"
             title="Recenter DOM ladder to current market price"
           >
-            <Crosshair className="w-2.5 h-2.5 text-[#0055ea]" />
+            <Crosshair className="w-2.5 h-2.5 text-[#2962ff]" />
             <span>Center</span>
           </button>
         </div>
       </div>
 
-      {/* Spread and Best Bid/Ask Display - XP Win32 Sunken Inset Panel */}
-      <div className="px-2 py-1 bg-[#ece9d8] border-b border-[#aca899] flex items-center justify-between text-[11px] font-sans">
-        <div className="flex items-center gap-1 border-t border-l border-[#808080] border-r border-b border-white bg-white px-2 py-0.5 shadow-inner">
-          <span className="text-slate-600 text-[10px] font-semibold">Bid:</span>
-          <span className="text-[#008000] font-bold font-mono">${bestBid?.toFixed(2)}</span>
+      {/* Spread and Best Bid/Ask Display - Modern ATAS Inset */}
+      <div className="px-3 py-1.5 bg-[#171b26] border-b border-[#2a2e39] grid grid-cols-3 gap-1.5 text-[11px] font-sans">
+        <div className="flex flex-col items-center bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">
+          <span className="text-[#787b86] text-[9px] uppercase tracking-wider">Bid</span>
+          <span className="text-[#089981] font-bold font-mono text-[11px]">${bestBid?.toFixed(2)}</span>
         </div>
-        <div className="flex items-center gap-1 border-t border-l border-[#808080] border-r border-b border-white bg-[#ffffe1] px-2 py-0.5 shadow-inner">
-          <span className="text-slate-600 text-[10px] font-semibold">Spread:</span>
-          <span className="text-[#b45309] font-bold font-mono">${(spread || 0).toFixed(2)}</span>
+        <div className="flex flex-col items-center bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">
+          <span className="text-[#787b86] text-[9px] uppercase tracking-wider">Spread</span>
+          <span className="text-[#f59e0b] font-bold font-mono text-[11px]">${(spread || 0).toFixed(2)}</span>
         </div>
-        <div className="flex items-center gap-1 border-t border-l border-[#808080] border-r border-b border-white bg-white px-2 py-0.5 shadow-inner">
-          <span className="text-slate-600 text-[10px] font-semibold">Ask:</span>
-          <span className="text-[#c00000] font-bold font-mono">${bestAsk?.toFixed(2)}</span>
+        <div className="flex flex-col items-center bg-[#1e222d] px-2 py-1 rounded border border-[#2a2e39]">
+          <span className="text-[#787b86] text-[9px] uppercase tracking-wider">Ask</span>
+          <span className="text-[#f23645] font-bold font-mono text-[11px]">${bestAsk?.toFixed(2)}</span>
         </div>
       </div>
 
-      {/* Windows XP Table Column Headers (Win32 ListView Header) */}
-      <div className="grid grid-cols-12 px-1 py-0.5 bg-gradient-to-b from-[#ffffff] via-[#ece9d8] to-[#ded9c9] border-b border-[#aca899] text-[10px] font-sans font-bold text-slate-800 shadow-sm select-none">
-        <div className="col-span-3 text-right pr-1 border-r border-[#aca899]">Bid Vol</div>
-        <div className="col-span-4 text-center px-1 border-r border-[#aca899]">Price ($)</div>
-        <div className="col-span-3 text-left pl-1 border-r border-[#aca899]">Ask Vol</div>
-        <div className="col-span-2 text-right pr-1">Vol</div>
+      {/* Table Column Headers */}
+      <div className="grid grid-cols-12 px-2 py-1 bg-[#1e222d] border-b border-[#2a2e39] text-[10px] font-sans font-semibold text-[#787b86] select-none">
+        <div className="col-span-3 text-right pr-2">Bid Vol</div>
+        <div className="col-span-4 text-center">Price ($)</div>
+        <div className="col-span-3 text-left pl-2">Ask Vol</div>
+        <div className="col-span-2 text-right pr-1">Total</div>
       </div>
 
-      {/* Windows XP Sunken Win32 ListView Table Body */}
+      {/* Ladder Body */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto bg-white border-t-2 border-l-2 border-[#808080] border-r border-b border-white font-mono text-[11px]"
+        className="flex-1 overflow-y-auto bg-[#131722] font-mono text-[11px] divide-y divide-[#1e222d]"
       >
-        {priceRows.map((price, rowIdx) => {
+        {priceRows.map((price) => {
           const bidQty = bidMap.get(price) || 0;
           const askQty = askMap.get(price) || 0;
           const isBestBid = bestBid > 0 && Math.abs(price - bestBid) < 0.25;
@@ -183,33 +177,29 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
           const bidBarWidth = Math.min(100, (bidQty / maxDepthQty) * 100);
           const askBarWidth = Math.min(100, (askQty / maxDepthQty) * 100);
 
-          const isEven = rowIdx % 2 === 0;
-
           return (
             <div
               key={price}
               onClick={() => onPriceClick && onPriceClick(price)}
-              className={`grid grid-cols-12 px-1 py-[2px] items-center border-b border-[#eef0f3] cursor-pointer transition-colors ${
+              className={`grid grid-cols-12 px-2 py-[2px] items-center cursor-pointer transition-colors relative ${
                 isCurrentPrice
-                  ? 'bg-[#ffe8a6] border-y border-[#d4a017] text-slate-950 font-bold shadow-sm'
+                  ? 'bg-[#2962ff]/20 text-white font-bold ring-1 ring-[#2962ff] z-10'
                   : isBestBid
-                  ? 'bg-[#ecfdf5] border-y border-[#a7f3d0]'
+                  ? 'bg-[#089981]/10'
                   : isBestAsk
-                  ? 'bg-[#fff1f2] border-y border-[#fecdd3]'
-                  : isEven
-                  ? 'bg-white hover:bg-[#e8f0fe]'
-                  : 'bg-[#f8f9fa] hover:bg-[#e8f0fe]'
+                  ? 'bg-[#f23645]/10'
+                  : 'hover:bg-[#1e222d]'
               }`}
             >
               {/* Bid Column with Depth Bar */}
-              <div className="col-span-3 relative h-4 flex items-center justify-end pr-1 border-r border-[#ece9d8]">
+              <div className="col-span-3 relative h-4 flex items-center justify-end pr-2">
                 {bidQty > 0 && (
                   <>
                     <div
-                      className="absolute right-0 top-0 bottom-0 bg-[#86efac]/50 rounded-[1px] transition-all duration-100"
+                      className="absolute right-0 top-0 bottom-0 bg-[#089981]/30 rounded-l transition-all duration-100"
                       style={{ width: `${bidBarWidth}%` }}
                     />
-                    <span className="relative z-10 font-bold text-[#008000] text-[11px]">
+                    <span className="relative z-10 font-bold text-[#089981] text-[11px]">
                       {bidQty.toFixed(1)}
                     </span>
                   </>
@@ -217,22 +207,22 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
               </div>
 
               {/* Price Column */}
-              <div className="col-span-4 text-center font-bold relative flex items-center justify-center border-r border-[#ece9d8]">
+              <div className="col-span-4 text-center font-semibold relative flex items-center justify-center">
                 {isBestBid && (
-                  <span className="absolute left-1 w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+                  <span className="absolute left-1 w-1.5 h-1.5 rounded-full bg-[#089981]" />
                 )}
                 {isBestAsk && (
-                  <span className="absolute left-1 w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+                  <span className="absolute left-1 w-1.5 h-1.5 rounded-full bg-[#f23645]" />
                 )}
                 <span
-                  className={`px-1 rounded-[1px] text-[11px] ${
+                  className={`px-1.5 py-0.5 rounded text-[11px] ${
                     isCurrentPrice
-                      ? 'bg-[#0055ea] text-white font-extrabold shadow-sm'
+                      ? 'bg-[#2962ff] text-white font-extrabold shadow-sm'
                       : isBestBid
-                      ? 'text-[#008000] font-extrabold'
+                      ? 'text-[#089981] font-bold'
                       : isBestAsk
-                      ? 'text-[#c00000] font-extrabold'
-                      : 'text-slate-800 font-bold'
+                      ? 'text-[#f23645] font-bold'
+                      : 'text-[#d1d4dc]'
                   }`}
                 >
                   {price.toFixed(2)}
@@ -240,14 +230,14 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
               </div>
 
               {/* Ask Column with Depth Bar */}
-              <div className="col-span-3 relative h-4 flex items-center justify-start pl-1 border-r border-[#ece9d8]">
+              <div className="col-span-3 relative h-4 flex items-center justify-start pl-2">
                 {askQty > 0 && (
                   <>
                     <div
-                      className="absolute left-0 top-0 bottom-0 bg-[#fca5a5]/50 rounded-[1px] transition-all duration-100"
+                      className="absolute left-0 top-0 bottom-0 bg-[#f23645]/30 rounded-r transition-all duration-100"
                       style={{ width: `${askBarWidth}%` }}
                     />
-                    <span className="relative z-10 font-bold text-[#c00000] text-[11px]">
+                    <span className="relative z-10 font-bold text-[#f23645] text-[11px]">
                       {askQty.toFixed(1)}
                     </span>
                   </>
@@ -257,9 +247,9 @@ export const DepthOfMarket: React.FC<DepthOfMarketProps> = ({
               {/* Traded Volume Profile at this Price */}
               <div className="col-span-2 text-right pr-1 text-[10px] font-mono">
                 {totalVolAtPrice > 0 ? (
-                  <span className="text-slate-700 font-semibold">{totalVolAtPrice.toFixed(0)}</span>
+                  <span className="text-[#787b86] font-medium">{totalVolAtPrice.toFixed(0)}</span>
                 ) : (
-                  <span className="text-slate-300">-</span>
+                  <span className="text-[#363a45]">-</span>
                 )}
               </div>
             </div>
